@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rennes Trafic - Archives</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100">
+  {% include "menu.html" %}
+    <section class="py-8">
+      <div class="max-w-2xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-blue-700 mb-2">Rennes Trafic</h1>
+        <h2 class="text-xl text-gray-600 mb-6">Accès aux archives historiques du trafic routier rennais depuis juin 2023</h2>
+        <div class="text-sm font-medium ">
+            <ul class="flex flex-wrap -mb-px">
+                {% for year in years %}
+                <li class="me-2">
+                    {% if year == selected_year %}
+                    <a href="#" class="inline-block p-4 text-blue-600 border-b-2 border-blue-600 rounded-t-lg active dark:text-blue-500 dark:border-blue-500" aria-current="page">{{ year }}</a>
+                    {% else %}
+                    <a href="/archives?year={{ year }}" class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-600 dark:hover:text-gray-600">{{ year }}</a>
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-6 mb-6 shadow">
+          <ul class="flex flex-col gap-2">
+          {% for file in files %}
+              <li>
+                <a href="/archives/{{ selected_year }}/{{ file }}" class="block px-4 py-2 rounded hover:bg-blue-50 text-blue-700 transition">
+                {{ file }}
+                </a>
+              </li>
+          {% endfor %}
+          {% if not files %}
+              <p class="mb-2">
+                Aucune données trouvées
+              </p>
+          {% endif %}
+          </ul>
+        </div>
+      </div>
+    </section>
+</body>
+</html>

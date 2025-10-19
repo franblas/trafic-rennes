@@ -1,0 +1,8 @@
+.DS_Store
+*.log
+venv/
+config.json
+archives/
+20*/
+deploy.sh
+*pycache*/

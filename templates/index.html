@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rennes Trafic</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+</head>
+<body class="bg-gray-100">
+  {% include "menu.html" %}
+    <section class="py-8">
+      <div class="max-w-4xl mx-auto px-4">
+        <h1 class="text-3xl font-bold text-blue-700 mb-2">Rennes Trafic</h1>
+        <h2 class="text-xl text-gray-600 mb-6">Etat du trafic routier rennais en temps réel et accès à l'historique du trafic depuis juin 2023</h2>
+        <div class="bg-gray-50 rounded-lg p-6 mb-6 shadow">
+          <h3 class="text-2xl font-semibold text-blue-700 mb-2">Trafic en temps réel</h3>
+           <div id="map" style="z-index:0;height:600px;"></div>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-6 mb-6 shadow">
+          <h3 class="text-2xl font-semibold text-blue-700 mb-2">Télécharger les données historiques</h3>
+          <p class="mb-2">
+            Les données historiques sont collectées toutes les 5min et stockées sous format json. 
+            Chaque journée est archivée dans un fichier compressé au format zip.
+          </p>
+          <p class="mb-2">
+            <strong>Arborescence d'une archive</strong><br>
+            |--- 2024-01-01.zip&nbsp;&nbsp;&nbsp;[year-month-day.zip]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|--- 00-00-00.json&nbsp;&nbsp;&nbsp;[hour-minute-second.zip]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|--- 00-05-00.json&nbsp;&nbsp;&nbsp;[hour-minute-second.zip]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|--- 00-10-00.json&nbsp;&nbsp;&nbsp;[hour-minute-second.zip]<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|--- [...]<br>
+          </p>
+          <a href="/archives"><button class="bg-blue-600 text-white rounded px-4 py-2 hover:bg-blue-700 transition">Accéder aux archives</button></a>
+        </div>
+        <div class="bg-gray-50 rounded-lg p-6 mb-6 shadow" id="understand-data">
+          <h3 class="text-2xl font-semibold text-blue-700 mb-2">Comprendre les données</h3>
+          <p class="mb-2">
+            Chaque document représente l'état des tronçons routiers rennais supervisé par la société Autoroutes Trafic.
+            Infos et références disponible sur le <a class="text-blue-600 underline" href="https://data.rennesmetropole.fr/explore/dataset/etat-du-trafic-en-temps-reel/information/">site data rennes métropole</a>.
+            <br>Détails des champs d'un document:
+          </p>
+          <div class="overflow-x-auto mb-4">
+            <table class="min-w-full table-auto border border-collapse border-gray-300 rounded-lg shadow-sm bg-white">
+              <thead>
+                <tr class="bg-blue-100 text-blue-800">
+                  <th class="px-4 py-2 font-semibold border-b border-gray-300">Nom</th>
+                  <th class="px-4 py-2 font-semibold border-b border-gray-300">Description</th>
+                  <th class="px-4 py-2 font-semibold border-b border-gray-300">Format</th>
+                  <th class="px-4 py-2 font-semibold border-b border-gray-300">Exemple</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">country</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Pays du fournisseur de données</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">fr</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">nationalIdentifier</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Nom du fournisseur de données</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Autoroutes Trafic</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">datetime</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Date de l'état du trafic (format ISO 8601)</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">2025-10-15T21:56:00+02:00</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">predefinedLocationReference</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Identifiant du tronçon</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">10273_D</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">averageVehicleSpeed</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Vitesse moyenne des véhicules sur le tronçon à la date donnée (format km/h)</td>
+                  <td class="px-4 py-2 border-b border-gray-200">int</td>
+                  <td class="px-4 py-2 border-b border-gray-200">77</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">travelTime</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Temps de parcours du tronçon (format secondes)</td>
+                  <td class="px-4 py-2 border-b border-gray-200">int</td>
+                  <td class="px-4 py-2 border-b border-gray-200">9</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">travelTimeReliability</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Fiabilité du temps de parcours fournis (format de 0% à 100%)</td>
+                  <td class="px-4 py-2 border-b border-gray-200">int</td>
+                  <td class="px-4 py-2 border-b border-gray-200">60</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">trafficStatus</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Status du trafic sur le tronçon à la date donnée.</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">freeFlow</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">vehicleProbeMeasurement</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Mesure de la sonde</td>
+                  <td class="px-4 py-2 border-b border-gray-200">int</td>
+                  <td class="px-4 py-2 border-b border-gray-200">2</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="mb-2">
+            Trafic status:
+            <ul class="list-disc pl-6 space-y-1 text-gray-700 mb-4">
+            <li><span class="font-semibold text-gray-700">unknown</span> : état inconnu</li>
+            <li><span class="font-semibold text-green-700">freeFlow</span> : fluide</li>
+            <li><span class="font-semibold text-yellow-700">heavy</span> : chargé</li>
+            <li><span class="font-semibold text-orange-700">congested</span> : congestionné</li>
+            <li><span class="font-semibold text-black">impossible</span> : circulation impossible</li>
+          </ul>
+          </p>
+          <p class="mb-2">
+            Les tronçons sont référencés dans un fichier de référence <a class="text-blue-600 underline" href="https://data.rennesmetropole.fr/explore/dataset/troncon_rva_support_fcd/information/">disponible ici</a>.
+            Il contient les infos de geolocalisation permettant l'affichage des tronçons sur une carte ainsi que diverses autres infos.
+            <br>Détails des champs du référentiel:
+            <div class="overflow-x-auto mb-4">
+            <table class="min-w-full border border-gray-300 rounded-lg shadow-sm bg-white">
+              <thead>
+                <tr class="bg-blue-100 text-blue-800">
+                  <th class="px-4 py-2 font-semibold border-b border-gray-300">Nom</th>
+                  <th class="px-4 py-2 font-semibold border-b border-gray-300">Description</th>
+                  <th class="px-4 py-2 font-semibold border-b border-gray-300">Format</th>
+                  <th class="px-4 py-2 font-semibold border-b border-gray-300">Exemple</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">Geo Point</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Coordonées du tronçon</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">48.08961893597334, -1.7056348825186607</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">Geo Shape</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Coordonées du tronçon (format geoshape)</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">{"coordinates": [[-1.705843748467844, 48.08937007819956], [-1.705426016569477, 48.089867793747125]], "type": "LineString"}</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">gml_id</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Autre identifiant</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">rva_troncon_fcd_v1_1.4170</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">id_rva_troncon_fcd_v1_1</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Autre identifiant</td>
+                  <td class="px-4 py-2 border-b border-gray-200">int</td>
+                  <td class="px-4 py-2 border-b border-gray-200">4170</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">id_troncon</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Identifiant du tronçon. Clé primaire à utiliser pour joindre les données</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">16859_D</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">hierarchie</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Hiérarchie du tronçon au sens du Plan de Déplacement Urbain de Rennes Métropole</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Réseau d'appui</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">hierarchie_dv</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Hiérarchie du tronçon au sens de la Direction de la voirie de Rennes Métropole</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Réseau structurant</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">denomination</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Nom du tronçon (rue, route ...)</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Avenue Roger Dodin</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">insee</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Identifiant insee</td>
+                  <td class="px-4 py-2 border-b border-gray-200">int</td>
+                  <td class="px-4 py-2 border-b border-gray-200">35281</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">sens_circule</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Sens unique ou non</td>
+                  <td class="px-4 py-2 border-b border-gray-200">string</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Sens unique</td>
+                </tr>
+                <tr class="even:bg-gray-50">
+                  <td class="px-4 py-2 border-b border-gray-200">vitesse_maxi</td>
+                  <td class="px-4 py-2 border-b border-gray-200">Vitesse maximale autorisée sur le tronçon (en km/h)</td>
+                  <td class="px-4 py-2 border-b border-gray-200">int</td>
+                  <td class="px-4 py-2 border-b border-gray-200">50</td>
+                </tr>
+              </tbody>
+            </table>
+            </div>
+          </p>
+        </div>
+      </div>
+    </section>
+    <script type="text/javascript">
+      var map = L.map('map', {dragging: !L.Browser.mobile, tap: !L.Browser.mobile}).setView([48.10423589406548, -1.6771144541772505], 12);
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {maxZoom: 19}).addTo(map);
+      async function getLatestTraffic() {
+        try {
+          const rep = await fetch("/trafic");
+          const data = await rep.json();
+          for(const d of data) {
+            L.polyline(d['coordinates'], {color: d['color'] }).addTo(map);
+          }
+          return data;
+        } catch (error) {
+          console.error(error);
+        }
+      };
+      getLatestTraffic();
+    </script>
+</body>
+</html>

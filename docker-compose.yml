@@ -1,0 +1,28 @@
+services:
+  fetch-and-archive:
+    build:
+      context: .
+    container_name: fetch-and-archive
+    volumes:
+      - ./:/app
+    restart: unless-stopped
+    command: python fetch_and_archive.py
+
+  archive-server:
+    build:
+      context: .
+    container_name: archive-server
+    volumes:
+      - ./:/app
+    restart: unless-stopped
+    command: waitress-serve --port=5000 archive_server:app
+    networks:
+      - webproxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.blog.rule=Host(`trafic-rennes.ancois.com`)"
+      - "traefik.http.routers.blog.entrypoints=websecure"
+      - "traefik.http.services.archive-server.loadbalancer.server.port=5000"
+networks:
+  webproxy:
+    external: true
