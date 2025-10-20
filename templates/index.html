@@ -4,6 +4,7 @@
     <title>Rennes Trafic</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    {% include "meta.html" %}
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -13,7 +14,7 @@
   {% include "menu.html" %}
     <section class="py-8">
       <div class="max-w-4xl mx-auto px-4">
-        <h1 class="text-3xl font-bold text-blue-700 mb-2">Rennes Trafic</h1>
+        <a href="/"><h1 class="text-3xl font-bold text-blue-700 mb-2">Rennes Trafic</h1></a>
         <h2 class="text-xl text-gray-600 mb-6">Etat du trafic routier rennais en temps réel et accès à l'historique du trafic depuis juin 2023</h2>
         <div class="bg-gray-50 rounded-lg p-6 mb-6 shadow">
           <h3 class="text-2xl font-semibold text-blue-700 mb-2">Trafic en temps réel</h3>
