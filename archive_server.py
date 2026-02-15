@@ -66,6 +66,11 @@ TRONCON_REF = load_troncon_ref()
 def index():
     return render_template("index.html")
 
+@app.route('/robots.txt', methods=["GET"])
+@app.route('/sitemap.xml', methods=["GET"])
+def static_from_root():
+    return send_from_directory(app.static_folder, request.path[1:])
+
 @app.route("/trafic", methods=["GET"])
 def trafic():
     trafic_data = load_trafic_data()

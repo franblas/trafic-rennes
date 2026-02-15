@@ -20,9 +20,9 @@ services:
       - webproxy
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.archive-server.rule=Host(`trafic-rennes.ancois.com`)"
+      - "traefik.http.routers.archive-server.rule=Host(`data-rennes.ancois.com`,`trafic-rennes.ancois.com`)"
       - "traefik.http.routers.archive-server.entrypoints=websecure"
-      - "traefik.http.routers.archive-server.middlewares=proxy-ratelimit"
+      - "traefik.http.routers.archive-server.middlewares=proxy-ratelimit,proxy-compress,proxy-sec-headers"
       - "traefik.http.services.archive-server.loadbalancer.server.port=5000"
 networks:
   webproxy:
