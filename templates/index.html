@@ -211,7 +211,7 @@
     </section>
     <script type="text/javascript">
       var map = L.map('map', {dragging: !L.Browser.mobile, tap: !L.Browser.mobile}).setView([48.10423589406548, -1.6771144541772505], 12);
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {maxZoom: 19}).addTo(map);
+      L.tileLayer('https://tile.osm.org/{z}/{x}/{y}.png', {maxZoom: 19}).addTo(map);
       async function getLatestTraffic() {
         try {
           const rep = await fetch("/trafic");

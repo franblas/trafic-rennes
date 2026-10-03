@@ -39,7 +39,7 @@ The script will run continuously, automatically handling storage, archiving, and
 Start the archive server:
 
 ```bash
-flask --app archive_server:app run --debug
+waitress-serve --port=5000 archive_server:app
 ```
 
 Open your browser at [http://localhost:5000](http://localhost:5000) to access the web interface and browse the archives.
